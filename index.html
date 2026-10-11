@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERRA — Эксперимент над планетой</title>
+
+<style>
+:root {
+  --bg: #08090b;
+  --surface: #0f1115;
+  --surface2: #151920;
+  --line: rgba(255,255,255,.09);
+  --text: #e8ebef;
+  --muted: #858d99;
+  --blue: #65a9ff;
+  --green: #8bd6ae;
+  --yellow: #e9c878;
+  --red: #ff8585;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.app {
+  max-width: 1600px;
+  margin: auto;
+  min-height: 100vh;
+  padding: 22px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+  margin-bottom: 22px;
+}
+
+.logo {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: 5px;
+}
+
+.logo span {
+  color: var(--blue);
+}
+
+.subtitle {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+}
+
+.header-right {
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+}
+
+.resources {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.resource {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.resource-label {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.resource-value {
+  margin-top: 9px;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.resource-note {
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(290px, .8fr);
+  gap: 18px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.panel-header {
+  padding: 17px 19px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+}
+
+.panel-description {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 5px;
+}
+
+.badge {
+  color: var(--blue);
+  background: rgba(101,169,255,.09);
+  border: 1px solid rgba(101,169,255,.2);
+  padding: 6px 9px;
+  border-radius: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.map {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+  background:
+    radial-gradient(ellipse at center, rgba(41,80,91,.12), transparent 70%);
+}
+
+.tile {
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: var(--surface2);
+  color: var(--text);
+  padding: 4px;
+  transition: .15s ease;
+  overflow: hidden;
+}
+
+.tile:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+
+.tile.selected {
+  border: 2px solid var(--blue);
+  box-shadow: 0 0 0 2px rgba(101,169,255,.12);
+}
+
+.tile.unknown {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #111419,
+      #111419 8px,
+      #151a20 8px,
+      #151a20 16px
+    );
+  color: #606875;
+}
+
+.tile.plains {
+  background: linear-gradient(145deg, #243b37, #152521);
+}
+
+.tile.forest {
+  background: linear-gradient(145deg, #245040, #12281f);
+}
+
+.tile.mountain {
+  background: linear-gradient(145deg, #45434b, #24242d);
+}
+
+.tile.desert {
+  background: linear-gradient(145deg, #66533a, #34291e);
+}
+
+.tile.wetland {
+  background: linear-gradient(145deg, #294e62, #162d3a);
+}
+
+.tile.water {
+  background: linear-gradient(145deg, #173d68, #0d223a);
+}
+
+.tile.snow {
+  background: linear-gradient(145deg, #657783, #35444f);
+}
+
+.tile-icon {
+  font-size: clamp(16px, 2vw, 26px);
+  display: block;
+  margin-top: 10%;
+}
+
+.tile-name {
+  font-size: 10px;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+
+.tile-coords {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  font-size: 9px;
+  opacity: .6;
+}
+
+.tile-state {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  font-size: 11px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 19px 17px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-square {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: #2c4e43;
+}
+
+.legend-square.unknown {
+  background: #282d34;
+}
+
+.legend-square.colony {
+  background: var(--blue);
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.content {
+  padding: 19px;
+}
+
+.territory-name {
+  font-size: 23px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.territory-type {
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.info-box {
+  background: var(--surface2);
+  padding: 12px;
+  border-radius: 7px;
+}
+
+.info-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.info-value {
+  margin-top: 7px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line);
+  margin: 18px 0;
+}
+
+.description {
+  line-height: 1.65;
+  color: #b6bec8;
+  font-size: 13px;
+}
+
+.actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--text);
+  padding: 11px 13px;
+  border-radius: 7px;
+  text-align: left;
+  transition: .15s;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--blue);
+}
+
+.btn.primary {
+  background: var(--blue);
+  color: #07111d;
+  border-color: var(--blue);
+  font-weight: 700;
+}
+
+.btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.btn small {
+  display: block;
+  font-size: 11px;
+  opacity: .7;
+  margin-top: 4px;
+}
+
+.log {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.5;
+  font-size: 12px;
+  color: #c2c9d2;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-time {
+  color: var(--blue);
+  font-size: 10px;
+  margin-bottom: 4px;
+  letter-spacing: .7px;
+}
+
+.science-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.science-card {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 13px;
+}
+
+.science-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.science-card span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.footer {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  padding: 22px 0 5px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 10;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  width: min(460px, 100%);
+}
+
+.modal h2 {
+  margin-top: 0;
+  font-size: 19px;
+}
+
+.modal p {
+  color: #b6bec8;
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.modal select,
+.modal input {
+  width: 100%;
+  padding: 11px;
+  margin: 8px 0 15px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .resources {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resources .resource:last-child {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 500px) {
+  .app {
+    padding: 12px;
+  }
+
+  header {
+    align-items: flex-start;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  .header-right {
+    font-size: 10px;
+  }
+
+  .map {
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .tile-icon {
+    font-size: 18px;
+  }
+
+  .tile-name {
+    font-size: 8px;
+  }
+
+  .tile-coords {
+    font-size: 7px;
+    left: 3px;
+    top: 3px;
+  }
+
+  .tile-state {
+    right: 3px;
+    bottom: 2px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <div>
+    <div class="logo">TERRA<span>.</span></div>
+    <div class="subtitle">ЭКСПЕРИМЕНТ НАД ПЛАНЕТОЙ</div>
+  </div>
+
+  <div class="header-right">
+    <div><span class="status-dot"></span>ЭКСПЕДИЦИЯ АКТИВНА</div>
+    <div>ПЛАНЕТА: TERRA-7</div>
+    <div id="dayLabel">СОЛ 001</div>
+  </div>
+</header>
+
+<section class="resources">
+  <div class="resource">
+    <div class="resource-label">Вода</div>
+    <div class="resource-value" id="water">100</div>
+    <div class="resource-note">единиц запаса</div>
+  </div>
+
+  <div class="resource">
+    <div class="resource-label">Продовольствие</div>
+    <div class="resource-value" id="food">80</div>
+    <div class="resource-note">единиц запаса</div>
+  </div>
+
+  <div class="resource">
+    <div class="resource-label">Материалы</div>
+    <div class="resource-value" id="materials">60</div>
+    <div class="resource-note">единиц запаса</div>
+  </div>
+
+  <div class="resource">
+    <div class="resource-label">Наука</div>
+    <div class="resource-value" id="science">0</div>
+    <div class="resource-note">исследовательских очков</div>
+  </div>
+
+  <div class="resource">
+    <div class="resource-label">Население</div>
+    <div class="resource-value" id="population">12</div>
+    <div class="resource-note">человек в экспедиции</div>
+  </div>
+</section>
+
+<div class="layout">
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Картографическая система</div>
+        <div class="panel-description">Выбирай участки для исследования</div>
+      </div>
+      <span class="badge" id="explorationLabel">0 / 36 ИЗУЧЕНО</span>
+    </div>
+
+    <div class="map" id="map"></div>
+
+    <div class="map-legend">
+      <div class="legend-item">
+        <span class="legend-square unknown"></span> Не изучено
+      </div>
+      <div class="legend-item">
+        <span class="legend-square"></span> Изучено
+      </div>
+      <div class="legend-item">
+        <span class="legend-square colony"></span> Колония
+      </div>
+    </div>
+  </section>
+
+  <div class="right-column">
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Данные участка</div>
+          <div class="panel-description">Объект текущего исследования</div>
+        </div>
+        <span class="badge" id="tileId">A1</span>
+      </div>
+
+      <div class="content">
+        <div class="territory-name" id="territoryName">Неизвестный участок</div>
+        <div class="territory-type" id="territoryType">Данные отсутствуют</div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="info-label">Климат</div>
+            <div class="info-value" id="climate">Неизвестен</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Вода</div>
+            <div class="info-value" id="waterInfo">Неизвестно</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Ресурсы</div>
+            <div class="info-value" id="resourceInfo">Неизвестны</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Пригодность</div>
+            <div class="info-value" id="habitability">Неизвестна</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="description" id="description">
+          Выбери участок на карте. Неизвестные территории скрывают потенциальные ресурсы и опасности.
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="exploreBtn">
+            Исследовать территорию
+            <small>Стоимость: 5 материалов</small>
+          </button>
+
+          <button class="btn" id="colonizeBtn">
+            Основать поселение
+            <small>Стоимость: 20 материалов и 15 продовольствия</small>
+          </button>
+
+          <button class="btn" id="buildBtn">
+            Построить исследовательскую станцию
+            <small>Стоимость: 15 материалов и 10 науки</small>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Научная лаборатория</div>
+          <div class="panel-description">Эксперименты над планетой</div>
+        </div>
+        <span class="badge">WORLD.EXE</span>
+      </div>
+
+      <div class="content">
+        <div class="science-grid">
+          <div class="science-card">
+            <strong>Климатический анализ</strong>
+            <span>Изучи закономерности распределения воды и температуры.</span>
+          </div>
+
+          <div class="science-card">
+            <strong>Геологический анализ</strong>
+            <span>Определи, какие ресурсы могут поддержать развитие колонии.</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="experimentBtn">
+            Провести эксперимент
+            <small>Стоимость: 15 науки</small>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Журнал экспедиции</div>
+          <div class="panel-description">Последние события</div>
+        </div>
+        <button class="btn" id="resetBtn" style="padding:6px 9px;font-size:11px">
+          Сбросить
+        </button>
+      </div>
+
+      <div class="content log" id="log"></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="footer">
+  TERRA-7 // НАУЧНО-ИССЛЕДОВАТЕЛЬСКАЯ СИСТЕМА // BUILD 0.1
+</div>
+
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">Эксперимент</h2>
+    <p id="modalText"></p>
+
+    <label for="experimentSelect">Параметр эксперимента</label>
+    <select id="experimentSelect">
+      <option value="forest">Увеличить площадь лесов</option>
+      <option value="water">Изменить распределение воды</option>
+      <option value="industry">Усилить промышленное развитие</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="btn primary" id="confirmExperiment">Запустить</button>
+      <button class="btn" id="cancelModal">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const SAVE_KEY = "terra-game-save-v01";
+
+  const terrainTypes = [
+    {
+      type: "Равнины",
+      css: "plains",
+      icon: "⌁",
+      climate: "Умеренный",
+      water: "Средний",
+      resource: "Плодородные почвы",
+      habitability: "Высокая",
+      waterValue: 2,
+      materialsValue: 1,
+      foodValue: 2,
+      score: 4,
+      description: "Обширная равнина с умеренными температурами. Предварительная оценка указывает на хорошие условия для земледелия и строительства."
+    },
+    {
+      type: "Лесные массивы",
+      css: "forest",
+      icon: "♧",
+      climate: "Влажный",
+      water: "Высокий",
+      resource: "Биомасса",
+      habitability: "Высокая",
+      waterValue: 3,
+      materialsValue: 2,
+      foodValue: 2,
+      score: 5,
+      description: "Плотная растительность свидетельствует о наличии жидкой воды. Однако состав местной биоты ещё предстоит изучить."
+    },
+    {
+      type: "Горный массив",
+      css: "mountain",
+      icon: "△",
+      climate: "Холодный",
+      water: "Низкий",
+      resource: "Минеральные породы",
+      habitability: "Низкая",
+      waterValue: 0,
+      materialsValue: 4,
+      foodValue: 0,
+      score: 2,
+      description: "Сложный рельеф затрудняет строительство. Геологическая структура может указывать на наличие ценных минеральных ресурсов."
+    },
+    {
+      type: "Пустыня",
+      css: "desert",
+      icon: "◇",
+      climate: "Засушливый",
+      water: "Очень низкий",
+      resource: "Минералы",
+      habitability: "Низкая",
+      waterValue: 0,
+      materialsValue: 3,
+      foodValue: 0,
+      score: 1,
+      description: "Экстремально сухая территория. Колонизация без надёжного источника воды сопряжена с высоким риском."
+    },
+    {
+      type: "Заболоченная низменность",
+      css: "wetland",
+      icon: "≋",
+      climate: "Влажный",
+      water: "Очень высокий",
+      resource: "Пресная вода",
+      habitability: "Средняя",
+      waterValue: 5,
+      materialsValue: 1,
+      foodValue: 1,
+      score: 4,
+      description: "Низменность с вероятным избытком поверхностных вод. Для строительства потребуются дренаж и оценка риска затопления."
+    },
+    {
+      type: "Ледниковое плато",
+      css: "snow",
+      icon: "❄",
+      climate: "Полярный",
+      water: "Средний",
+      resource: "Лёд и минералы",
+      habitability: "Низкая",
+      waterValue: 3,
+      materialsValue: 2,
+      foodValue: 0,
+      score: 2,
+      description: "Холодная возвышенность. Лёд может стать источником воды, но для его использования потребуются энергия и оборудование."
+    },
+    {
+      type: "Внутреннее море",
+      css: "water",
+      icon: "≈",
+      climate: "Морской",
+      water: "Очень высокий",
+      resource: "Водные ресурсы",
+      habitability: "Низкая",
+      waterValue: 5,
+      materialsValue: 0,
+      foodValue: 1,
+      score: 2,
+      description: "Крупный водоём. Его солёность, глубина и химический состав пока неизвестны. Само наличие воды ещё не означает её пригодность для питья."
+    }
+  ];
+
+  const state = {
+    day: 1,
+    water: 100,
+    food: 80,
+    materials: 60,
+    science: 0,
+    population: 12,
+    selected: 14,
+    tiles: [],
+    colonies: [],
+    stations: [],
+    log: [],
+    experiments: 0,
+    gameOver: false
+  };
+
+  const $ = id => document.getElementById(id);
+
+  function randomTerrain() {
+    const r = Math.random();
+
+    if (r < 0.24) return terrainTypes[0];
+    if (r < 0.42) return terrainTypes[1];
+    if (r < 0.58) return terrainTypes[2];
+    if (r < 0.70) return terrainTypes[3];
+    if (r < 0.82) return terrainTypes[4];
+    if (r < 0.91) return terrainTypes[5];
+
+    return terrainTypes[6];
+  }
+
+  function makeTile(index) {
+    const row = Math.floor(index / 6);
+    const col = index % 6;
+    const letters = "ABCDEF";
+
+    return {
+      id: index,
+      coords: letters[row] + (col + 1),
+      terrain: randomTerrain().type,
+      explored: false,
+      colony: false,
+      station: false,
+      modified: false,
+      fertility: Math.floor(30 + Math.random() * 71),
+      temperature: Math.floor(-25 + Math.random() * 61),
+      risk: Math.floor(5 + Math.random() * 76)
+    };
+  }
+
+  function initializeTiles() {
+    state.tiles = Array.from({length: 36}, (_, i) => makeTile(i));
+
+    // Стартовая территория рядом с центральной частью карты.
+    state.tiles[14].terrain = "Равнины";
+    state.tiles[14].explored = true;
+
+    state.tiles[15].terrain = "Лесные массивы";
+    state.tiles[20].terrain = "Заболоченная низменность";
+    state.tiles[21].terrain = "Горный массив";
+  }
+
+  function terrain(tile) {
+    return terrainTypes.find(t => t.type === tile.terrain) || terrainTypes[0];
+  }
+
+  function addLog(message) {
+    const time = String(state.day).padStart(3, "0");
+
+    state.log.unshift({
+      time: "СОЛ " + time,
+      message
+    });
+
+    state.log = state.log.slice(0, 30);
+    renderLog();
+  }
+
+  function renderLog() {
+    $("log").innerHTML = "";
+
+    if (!state.log.length) {
+      $("log").textContent = "Событий пока нет.";
+      return;
+    }
+
+    state.log.forEach(entry => {
+      const item = document.createElement("div");
+      item.className = "log-entry";
+
+      const time = document.createElement("div");
+      time.className = "log-time";
+      time.textContent = entry.time;
+
+      const message = document.createElement("div");
+      message.textContent = entry.message;
+
+      item.append(time, message);
+      $("log").appendChild(item);
+    });
+  }
+
+  function renderMap() {
+    const map = $("map");
+    map.innerHTML = "";
+
+    state.tiles.forEach(tile => {
+      const button = document.createElement("button");
+      button.className = "tile";
+
+      if (tile.explored) {
+        button.classList.add(terrain(tile).css);
+      } else {
+        button.classList.add("unknown");
+      }
+
+      if (tile.id === state.selected) {
+        button.classList.add("selected");
+      }
+
+      if (tile.colony) {
+        button.style.borderColor = "var(--blue)";
+      }
+
+      const coords = document.createElement("span");
+      coords.className = "tile-coords";
+      coords.textContent = tile.coords;
+
+      const icon = document.createElement("span");
+      icon.className = "tile-icon";
+      icon.textContent = tile.explored ? terrain(tile).icon : "?";
+
+      const name = document.createElement("div");
+      name.className = "tile-name";
+      name.textContent = tile.explored
+        ? terrain(tile).type
+        : "Не изучено";
+
+      const status = document.createElement("span");
+      status.className = "tile-state";
+      status.textContent = tile.colony
+        ? "⌂"
+        : tile.station
+        ? "⌘"
+        : "";
+
+      button.append(coords, icon, name, status);
+
+      button.addEventListener("click", () => {
+        state.selected = tile.id;
+        renderMap();
+        renderTile();
+      });
+
+      map.appendChild(button);
+    });
+
+    const explored = state.tiles.filter(t => t.explored).length;
+    $("explorationLabel").textContent =
+      `${explored} / ${state.tiles.length} ИЗУЧЕНО`;
+  }
+
+  function renderTile() {
+    const tile = state.tiles[state.selected];
+    const t = terrain(tile);
+
+    $("tileId").textContent = tile.coords;
+
+    if (!tile.explored) {
+      $("territoryName").textContent = "Неизвестный участок";
+      $("territoryType").textContent = "Данные отсутствуют";
+
+      $("climate").textContent = "Неизвестен";
+      $("waterInfo").textContent = "Неизвестно";
+      $("resourceInfo").textContent = "Неизвестны";
+      $("habitability").textContent = "Неизвестна";
+
+      $("description").textContent =
+        "Спутниковые снимки недостаточно подробны. " +
+        "Проведи полевое исследование, чтобы установить тип рельефа, " +
+        "климатические условия и доступность ресурсов.";
+
+      $("exploreBtn").disabled = state.gameOver;
+      $("colonizeBtn").disabled = true;
+      $("buildBtn").disabled = true;
+
+      return;
+    }
+
+    $("territoryName").textContent = t.type;
+    $("territoryType").textContent =
+      `Участок ${tile.coords} · ${tile.colony ? "Колонизирован" : "Исследован"}`;
+
+    $("climate").textContent = tile.modified
+      ? "Изменён"
+      : t.climate;
+
+    $("waterInfo").textContent = t.water;
+    $("resourceInfo").textContent = t.resource;
+    $("habitability").textContent = t.habitability;
+
+    let description = t.description;
+
+    if (tile.colony) {
+      description += " Здесь расположено поселение. Колония обеспечивает развитие научной программы.";
+    }
+
+    if (tile.station) {
+      description += " На участке действует исследовательская станция.";
+    }
+
+    if (tile.modified) {
+      description += " Среда изменена экспериментом. Не все долгосрочные последствия известны.";
+    }
+
+    description +=
+      `\n\nТемпература: ${tile.temperature} °C. ` +
+      `Плодородие: ${tile.fertility}%. ` +
+      `Оценочный экологический риск: ${tile.risk}%.`;
+
+    $("description").textContent = description;
+
+    $("exploreBtn").disabled =
+      state.gameOver || tile.explored || state.materials < 5;
+
+    $("colonizeBtn").disabled =
+      state.gameOver ||
+      !tile.explored ||
+      tile.colony ||
+      t.habitability === "Низкая" ||
+      state.materials < 20 ||
+      state.food < 15 ||
+      state.colonies.length >= 4;
+
+    $("buildBtn").disabled =
+      state.gameOver ||
+      !tile.explored ||
+      tile.station ||
+      state.materials < 15 ||
+      state.science < 10;
+  }
+
+  function renderResources() {
+    ["water", "food", "materials", "science", "population"].forEach(key => {
+      $(key).textContent = state[key];
+      $(key).style.color =
+        ["water", "food", "materials"].includes(key) && state[key] < 20
+          ? "var(--red)"
+          : "var(--text)";
+    });
+
+    $("dayLabel").textContent =
+      "СОЛ " + String(state.day).padStart(3, "0");
+  }
+
+  function renderAll() {
+    renderResources();
+    renderMap();
+    renderTile();
+    renderLog();
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.warn("Не удалось сохранить игру", error);
+    }
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+
+      if (!raw) return false;
+
+      const saved = JSON.parse(raw);
+
+      if (
+        !saved ||
+        !Array.isArray(saved.tiles) ||
+        saved.tiles.length !== 36 ||
+        !Number.isInteger(saved.selected) ||
+        saved.selected < 0 ||
+        saved.selected >= 36
+      ) {
+        return false;
+      }
+
+      Object.assign(state, saved);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function canAct() {
+    if (state.gameOver) {
+      alert("Экспедиция завершена. Начни новую игру.");
+      return false;
+    }
+
+    return true;
+  }
+
+  function endTurn() {
+    if (state.gameOver) return;
+
+    state.day++;
+
+    if (state.colonies.length > 0) {
+      state.water -= state.population;
+      state.food -= state.population;
+      state.science += state.stations.length * 2;
+    }
+
+    // Экспедиция автоматически использует найденные ресурсы.
+    state.tiles.forEach(tile => {
+      if (!tile.explored) return;
+
+      const t = terrain(tile);
+
+      if (tile.colony) {
+        state.food += Math.max(0, Math.floor(t.foodValue / 2));
+        state.water += Math.max(0, Math.floor(t.waterValue / 2));
+      }
+    });
+
+    state.water = Math.max(0, state.water);
+    state.food = Math.max(0, state.food);
+
+    if (state.colonies.length > 0 &&
+        (state.water === 0 || state.food === 0)) {
+      state.gameOver = true;
+      addLog("Критическая нехватка ресурсов. Экспедиция не может поддерживать жизнедеятельность.");
+    } else {
+      addLog("Завершён очередной сол. Проверьте состояние ресурсов и продолжите исследования.");
+    }
+
+    renderAll();
+    save();
+  }
+
+  function explore() {
+    if (!canAct()) return;
+
+    const tile = state.tiles[state.selected];
+
+    if (tile.explored) {
+      alert("Этот участок уже исследован.");
+      return;
+    }
+
+    if (state.materials < 5) {
+      alert("Недостаточно материалов.");
+      return;
+    }
+
+    state.materials -= 5;
+    tile.explored = true;
+
+    const t = terrain(tile);
+    const bonus = Math.floor(Math.random() * 5) + 2;
+
+    state.science += bonus;
+    state.water += t.waterValue;
+    state.materials += Math.floor(t.materialsValue / 2);
+
+    addLog(
+      `Исследован участок ${tile.coords}: ${t.type.toLowerCase()}. ` +
+      `Получено ${bonus} научных очков.`
+    );
+
+    if (t.score >= 4) {
+      addLog(
+        `Участок ${tile.coords} представляет потенциальный интерес для основания поселения.`
+      );
+    }
+
+    endTurn();
+  }
+
+  function colonize() {
+    if (!canAct()) return;
+
+    const tile = state.tiles[state.selected];
+    const t = terrain(tile);
+
+    if (!tile.explored || tile.colony) {
+      alert("Для колонизации нужен исследованный свободный участок.");
+      return;
+    }
+
+    if (t.habitability === "Низкая") {
+      alert("Условия слишком суровы для основания поселения на данном этапе.");
+      return;
+    }
+
+    if (state.materials < 20 || state.food < 15) {
+      alert("Недостаточно ресурсов для строительства поселения.");
+      return;
+    }
+
+    if (state.colonies.length >= 4) {
+      alert("В прототипе допускается не более четырёх поселений.");
+      return;
+    }
+
+    state.materials -= 20;
+    state.food -= 15;
+    tile.colony = true;
+    state.colonies.push(tile.id);
+
+    addLog(`На участке ${tile.coords} основано новое поселение.`);
+
+    endTurn();
+  }
+
+  function buildStation() {
+    if (!canAct()) return;
+
+    const tile = state.tiles[state.selected];
+
+    if (!tile.explored || tile.station) {
+      alert("Нужен исследованный участок без станции.");
+      return;
+    }
+
+    if (state.materials < 15 || state.science < 10) {
+      alert("Не хватает материалов или научных очков.");
+      return;
+    }
+
+    state.materials -= 15;
+    state.science -= 10;
+    tile.station = true;
+    state.stations.push(tile.id);
+
+    addLog(`На участке ${tile.coords} построена исследовательская станция.`);
+
+    endTurn();
+  }
+
+  function openExperiment() {
+    if (!canAct()) return;
+
+    if (state.science < 15) {
+      alert("Нужно не менее 15 научных очков.");
+      return;
+    }
+
+    $("modalTitle").textContent = "Эксперимент над планетой";
+
+    $("modalText").textContent =
+      "Измени один из параметров планеты. " +
+      "Это упрощённая игровая модель, а не точный прогноз реальных климатических или экологических процессов. " +
+      "Эксперимент может принести пользу и создать новые риски.";
+
+    $("modalBackdrop").classList.add("open");
+  }
+
+  function runExperiment() {
+    if (!canAct()) return;
+
+    if (state.science < 15) {
+      alert("Недостаточно научных очков.");
+      return;
+    }
+
+    const type = $("experimentSelect").value;
+
+    state.science -= 15;
+    state.experiments++;
+
+    const target = state.tiles.find(t => t.colony) ||
+                   state.tiles.find(t => t.explored);
+
+    if (type === "forest") {
+      target.fertility = Math.min(100, target.fertility + 15);
+      target.risk = Math.max(0, target.risk - 5);
+      target.modified = true;
+
+      addLog(
+        `Эксперимент: восстановление растительности. ` +
+        `Плодородие участка ${target.coords} повысилось. ` +
+        `Модель предполагает локальное снижение экологического риска.`
+      );
+
+    } else if (type === "water") {
+      if (state.water >= 10) {
+        state.water -= 10;
+        target.modified = true;
+        target.risk = Math.min(100, target.risk + 8);
+
+        addLog(
+          `Эксперимент: перераспределение воды. ` +
+          `Израсходовано 10 единиц воды. ` +
+          `Экологические последствия требуют дальнейшего наблюдения.`
+        );
+      } else {
+        state.science += 15;
+        state.experiments--;
+
+        alert("Недостаточно воды для эксперимента.");
+        return;
+      }
+
+    } else if (type === "industry") {
+      state.materials += 15;
+      target.modified = true;
+      target.risk = Math.min(100, target.risk + 12);
+
+      addLog(
+        "Эксперимент: ускоренное промышленное развитие. " +
+        "Получено 15 материалов, но экологический риск увеличился."
+      );
+    }
+
+    addLog(
+      "Научный отчёт: результаты являются предварительными. " +
+      "Неопределённость модели остаётся высокой."
+    );
+
+    $("modalBackdrop").classList.remove("open");
+
+    endTurn();
+  }
+
+  function resetGame() {
+    if (!confirm("Удалить сохранение и начать экспедицию заново?")) {
+      return;
+    }
+
+    localStorage.removeItem(SAVE_KEY);
+
+    state.day = 1;
+    state.water = 100;
+    state.food = 80;
+    state.materials = 60;
+    state.science = 0;
+    state.population = 12;
+    state.selected = 14;
+    state.colonies = [];
+    state.stations = [];
+    state.log = [];
+    state.experiments = 0;
+    state.gameOver = false;
+
+    initializeTiles();
+
+    addLog("Экспедиция прибыла на планету Терра-7.");
+    addLog("Задача: исследовать территорию и создать устойчивое поселение.");
+
+    renderAll();
+    save();
+  }
+
+  $("exploreBtn").addEventListener("click", explore);
+  $("colonizeBtn").addEventListener("click", colonize);
+  $("buildBtn").addEventListener("click", buildStation);
+  $("experimentBtn").addEventListener("click", openExperiment);
+  $("confirmExperiment").addEventListener("click", runExperiment);
+
+  $("cancelModal").addEventListener("click", () => {
+    $("modalBackdrop").classList.remove("open");
+  });
+
+  $("modalBackdrop").addEventListener("click", event => {
+    if (event.target === $("modalBackdrop")) {
+      $("modalBackdrop").classList.remove("open");
+    }
+  });
+
+  $("resetBtn").addEventListener("click", resetGame);
+
+  if (!load()) {
+    initializeTiles();
+
+    addLog("Экспедиция прибыла на планету Терра-7.");
+    addLog("Задача: исследовать территорию и создать устойчивое поселение.");
+    addLog("Сканирование центральной равнины завершено.");
+
+    save();
+  }
+
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
